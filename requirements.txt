@@ -1,0 +1,7 @@
+# Añade las dependencias del proyecto aquí, por ejemplo:
+# Flask>=2.0
+# fastapi>=0.95
+# numpy>=1.25
+
+# Ejecuta `pip freeze > requirements.txt` desde tu entorno virtual
+# cuando quieras fijar las versiones exactas.
