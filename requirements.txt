@@ -1,7 +1,19 @@
-# Añade las dependencias del proyecto aquí, por ejemplo:
-# Flask>=2.0
-# fastapi>=0.95
-# numpy>=1.25
+# Dependencias necesarias para ejecutar `appF.py` con Streamlit
+# Versión mínima sugerida; ajusta según tu entorno.
 
-# Ejecuta `pip freeze > requirements.txt` desde tu entorno virtual
-# cuando quieras fijar las versiones exactas.
+streamlit>=1.24
+pandas>=2.0
+numpy>=1.25
+scikit-learn>=1.2
+plotly>=5.15
+openpyxl>=3.0
+python-dotenv>=1.0  # opcional: carga variables de entorno desde .env
+
+# Notas:
+# - Si cargas archivos .xlsx, `openpyxl` es necesario para `pandas.read_excel`.
+# - Después de instalar paquetes y verificar que todo funciona, fija versiones exactas:
+#
+#     pip freeze > requirements.txt
+#
+# Ajusta o añade paquetes adicionales si en tu proyecto usas otros módulos.
+
