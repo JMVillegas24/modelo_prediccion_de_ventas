@@ -1,108 +1,119 @@
-# Proyecto IA Exporatorio V3
+# Sales Intelligence Platform — Documentación de Implementación
 
-Descripción
-- Proyecto con archivos principales `app.py` y `backend.py`.
-
-Instalación
-1. Crear y activar un entorno virtual (recomendado)
-
-Windows PowerShell:
-
-```powershell
-python -m venv venv
-venv\Scripts\Activate.ps1
-```
-
-Windows (cmd):
-
-```cmd
-python -m venv venv
-venv\Scripts\activate
-```
-
-2. Actualizar pip e instalar dependencias
-
-```powershell
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-```
+Resumen
+-------
+Proyecto "Sales Intelligence Platform": aplicación web unificada (backend + frontend) desarrollada con Streamlit para entrenamiento de un modelo predictivo (LogisticRegression) y visualización de métricas y dashboards comerciales.
 
 Estructura del proyecto
+-----------------------
+- `app.py` : Código principal (UI Streamlit, lógica de limpieza, ML, persistencia y visualizaciones).
+- `model.pkl` : Archivo creado al entrenar el modelo (serializado con `pickle`).
+- `artifacts.json` : Metadatos y artefactos del entrenamiento (features, listas únicas, estadísticas).
+- `sales_app.db` : Base de datos SQLite donde se guardan usuarios y predicciones.
 
-- `app.py` - Punto de entrada principal de la aplicación.
-- `backend.py` - Lógica del backend / servicios.
-- `requirements.txt` - Dependencias del proyecto.
-- `.gitignore` - Archivos y carpetas ignoradas por git.
+Requisitos
+----------
+- Python 3.8+ (recomendado 3.10+)
+- Dependencias listadas en `requirements.txt`.
 
-Proceso de implementación (Windows)
-
-1) Preparar entorno
-
-- Clonar el repositorio y moverse a la carpeta del proyecto.
+Instalación y ejecución local
+-----------------------------
+1. Clonar o copiar el repositorio en tu equipo.
+2. Crear y activar un entorno virtual (recomendado):
 
 ```powershell
-git clone <url-del-repo>
-cd "Proyecto IA Exporatorio V3\app"
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1    # PowerShell
 ```
 
-- Crear y activar el entorno virtual (ver comandos arriba).
-
-2) Instalar dependencias
+3. Instalar dependencias:
 
 ```powershell
 pip install -r requirements.txt
 ```
 
-Si `requirements.txt` está vacío, instala manualmente las dependencias necesarias, por ejemplo:
+4. Ejecutar la aplicación Streamlit:
 
 ```powershell
-pip install flask
-pip install numpy
+streamlit run app.py
 ```
 
-3) Configurar variables de entorno (si aplica)
+Flujo de uso de la app
+----------------------
+- Registro / Inicio de sesión: se almacenan usuarios en la base de datos SQLite (`sales_app.db`).
+- Entrenamiento: sube un archivo Excel (.xlsx) o CSV con las columnas requeridas. Pulsa `Entrenar Modelo` para generar `model.pkl` y `artifacts.json`.
+- Dashboard: visualizaciones de conversión por categoría, zona y vendedores.
+- Predicción: usa el modelo entrenado para predecir probabilidad de adjudicación; guarda predicciones en la BD.
+- Historial: visualiza predicciones guardadas por usuario.
 
-- Crea un archivo `.env` o configura variables de entorno en Windows. Ejemplo con PowerShell:
+Formato de datos esperado
+-------------------------
+El cargador es flexible con nombres de columna (mapea alternativas). Columnas necesarias finales:
+- `Cliente`
+- `Zona Geográfica`
+- `Usuario_Interno`
+- `Solicitud` (de la cual se extrae `Categoria_Producto`)
+- `¿Adjudicado?` (0/1 o equivalentes 'Sí'/'No')
 
-```powershell
-$env:FLASK_ENV = "development"
-$env:API_KEY = "tu_api_key"
-```
+Proceso de implementación (paso a paso)
+-------------------------------------
+1. Configuración de la página Streamlit
+   - `st.set_page_config()` para título, icono y layout.
 
-4) Iniciar la aplicación
+2. Tema y estilos
+   - Función `aplicar_tema_oscuro()` inyecta CSS para apariencia oscura y componentes estilo tarjeta.
 
-```powershell
-python app.py
-# o si arrancas el backend por separado
-python backend.py
-```
+3. Normalización y limpieza de datos
+   - `normalizar_columnas(df)` mapea nombres alternativos a un esquema estándar.
+   - `limpiar_valores(df)` limpia strings, extrae `Categoria_Producto` usando `extraer_categoria()`.
+   - `CATEGORIA_KEYWORDS` define heurísticas por palabra clave para clasificar `Solicitud` en categorías.
 
-5) Pruebas rápidas
+4. Ingeniería y transformación de features
+   - Variables categóricas (`Cliente`, `Zona Geográfica`, `Usuario_Interno`, `Categoria_Producto`) se convierten a dummies via `pd.get_dummies()`.
 
-- Asegúrate de que la aplicación responde en el puerto esperado (por ejemplo, `http://localhost:5000`).
-- Revisa logs y corrige dependencias faltantes.
+5. Entrenamiento del modelo
+   - `train_model_logic(df)` entrena `LogisticRegression(max_iter=1000)` sobre las dummies.
+   - Calcula métricas: matriz de confusión, reportes de clasificación, AUC/ROC, coeficientes.
+   - Guarda `model.pkl` (pickle) y `artifacts.json` con metadatos útiles para predicción y UI.
 
-Despliegue (opciones comunes)
+6. Predicción
+   - `make_prediction(model, artifacts, ...)` construye un DataFrame con las mismas columnas que el modelo espera, completa columnas faltantes con 0 y calcula `predict_proba`.
 
-- Heroku: usar `Procfile`, configurar variables de entorno y `git push heroku main`.
-- VPS/Servidor: usar `systemd` o `pm2` (si es Node) y configurar un proxy inverso con Nginx.
-- Contenedores: crear un `Dockerfile` y usar `docker build` / `docker run`.
+7. Persistencia y BD
+   - `init_db()` crea tablas `users` y `predictions` en `sales_app.db`.
+   - `user_auth()` maneja registro/login (almacena hash SHA-256 de contraseñas).
+   - `save_prediction_db()` y `get_history()` guardan/recuperan registros de predicciones.
 
-Mantenimiento
+8. Visualizaciones
+   - Se usan `plotly.express` y `plotly.graph_objects` para gráficos (barras, pie, heatmap de matriz de confusión).
 
-- Actualizar dependencias con `pip install --upgrade <paquete>` y luego fijarlas con:
+9. Interfaz y experiencia
+   - Menú lateral con secciones: Entrenamiento, Dashboard, Vendedores, Clientes, Predicción, Historial, Análisis.
+   - Componentes estilizados y tarjetas de KPI con HTML/CSS embebido.
 
-```powershell
-pip freeze > requirements.txt
-```
+Consideraciones de seguridad y despliegue
+--------------------------------------
+- No guardar contraseñas en texto plano (ya se usa SHA-256). Para producción se recomienda usar hashing con salt (bcrypt/argon2).
+- Los archivos `model.pkl`, `artifacts.json` y `sales_app.db` contienen datos sensibles; protegerlos en despliegues.
 
-- Añadir instrucciones específicas del módulo o modelos de IA si los hay.
+Despliegue recomendado
+----------------------
+- Desplegar en un servicio que soporte Streamlit (Streamlit Community Cloud, Heroku, Azure Web Apps). Asegurar variables de entorno para credenciales.
+
+Mejoras futuras sugeridas
+-------------------------
+- Separar backend y frontend para escalabilidad (API + UI).
+- Añadir pruebas unitarias e integración continua.
+- Mejorar pipeline de entrenamiento (validación cruzada, hold-out, logging de experimentos con MLflow).
+- Añadir control de versiones del dataset y model registry.
+
+Archivos creados
+---------------
+- `requirements.txt` — lista de dependencias.
+- `.gitignore` — entradas comunes para proyectos Python y artefactos generados.
 
 Contacto
+-------
+Para preguntas o mejoras, abre un issue o crea un PR con cambios propuestos.
 
-- Añade información de contacto o responsables del proyecto aquí.
-
-Notas finales
-
-- Completa `requirements.txt` con las versiones exactas cuando el proyecto esté estable.
-- Documenta rutas, endpoints y ejemplos de uso según se vayan incorporando.
+-- Fin de la documentación --

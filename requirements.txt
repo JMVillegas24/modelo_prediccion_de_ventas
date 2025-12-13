@@ -1,4 +1,4 @@
-# Dependencias necesarias para ejecutar `appF.py` con Streamlit
+# Dependencias necesarias para ejecutar `app.py` con Streamlit
 # Versión mínima sugerida; ajusta según tu entorno.
 
 streamlit>=1.24
